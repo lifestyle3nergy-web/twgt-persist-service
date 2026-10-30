@@ -1,0 +1,33 @@
+{
+  "name": "@twgt/persist-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lifestyle3nergy-web/twgt-persist-service.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lifestyle3nergy-web/twgt-persist-service/issues"
+  },
+  "homepage": "https://github.com/lifestyle3nergy-web/twgt-persist-service#readme",
+  "dependencies": {
+    "@twgt/relationship-types": "^1.0.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "dotenv": "^18.0.9",
+    "neo4j-driver": "^6.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.4.5"
+  }
+}
