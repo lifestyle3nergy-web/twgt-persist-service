@@ -10,56 +10,76 @@ async function main() {
   const filePath = process.argv[2];
   if (!filePath) {
     console.error("Usage: node dist/src/index.js <relationship.json>");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
-  // 1. Read and validate structure
-  const rawData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  // 1. Fail-closed config validation BEFORE any network I/O
+  const opaUrl    = process.env.OPA_URL;
+  const neo4jUri  = process.env.NEO4J_URI;
+  const neo4jUser = process.env.NEO4J_USER;
+  const neo4jPass = process.env.NEO4J_PASSWORD;
+  const missing: string[] = [];
+  if (!opaUrl)    missing.push('OPA_URL');
+  if (!neo4jUri)  missing.push('NEO4J_URI');
+  if (!neo4jUser) missing.push('NEO4J_USER');
+  if (!neo4jPass) missing.push('NEO4J_PASSWORD');
+  if (missing.length > 0) {
+    console.error(`❌ FATAL: missing required environment variables: ${missing.join(', ')}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // 2. Read and validate structure
+  let rawData: any;
+  try {
+    rawData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (err: any) {
+    console.error(`❌ Failed to read/parse ${filePath}: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
   const validator = new Validator();
   const { valid, errors } = validator.validate(rawData);
-  
   if (!valid) {
     console.error("❌ Validation failed:", errors);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
-  // 2. Authorize (Fail-Closed)
-  const opaUrl = process.env.OPA_URL || 'http://localhost:8181';
+  // 3. Authorize (fail-closed)
   try {
     console.log(`Querying OPA at ${opaUrl}...`);
-    const { allow, reason } = await authorizeWithOpa(rawData, opaUrl);
+    const { allow, reason } = await authorizeWithOpa(rawData, opaUrl!);
     if (!allow) {
       console.error(`❌ Authorization failed: ${reason}`);
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
     console.log("✅ Authorization passed.");
   } catch (error: any) {
     console.error(`❌ Authorization check failed: ${error.message}`);
-    process.exit(2); // Exit code 2 for OPA unavailable
+    process.exitCode = 2;
+    return;
   }
 
-  // 3. Connect to DB and initialize constraints
-  const db = new GraphDatabase(
-    process.env.NEO4J_URI || 'bolt://localhost:7687',
-    process.env.NEO4J_USER || 'neo4j',
-    process.env.NEO4J_PASSWORD || 'password'
-  );
-
+  // 4. Persist
+  const db = new GraphDatabase(neo4jUri!, neo4jUser!, neo4jPass!);
   try {
     console.log("Connecting to Neo4j...");
     await db.verifyConnectivity();
-    
-    // Ensure graph integrity constraints exist
     await db.initializeConstraints();
-    
-    // 4. Persist
     await db.persistRelationship(rawData as Relationship);
+    console.log("✅ Relationship persisted.");
   } catch (error) {
     console.error("❌ Database error:", error);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     await db.close();
   }
 }
 
-main();
+main().catch((err) => {
+  console.error("❌ Unhandled error:", err);
+  process.exitCode = 1;
+});
