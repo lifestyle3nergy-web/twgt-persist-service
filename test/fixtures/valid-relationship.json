@@ -1,0 +1,10 @@
+{
+  "id": "rel:01HX7ZK2M3N4P5Q6R7S8T9V0W1",
+  "kind": "ownership",
+  "from": { "type": "team", "id": "platform" },
+  "to": { "type": "repo", "id": "TWGT-" },
+  "createdAt": "2026-10-29T00:00:00Z",
+  "source": { "repo": "lifestyle3nergy-web/TWGT-", "commit": "a1b2c3d", "author": "test@test.com" },
+  "attributes": { "role": "maintainer" },
+  "schemaVersion": "1.0.0"
+}
